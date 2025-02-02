@@ -2,9 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -23,7 +25,8 @@ var db *sql.DB
 
 func initDB() {
 	var err error
-	db, err = sql.Open("sqlite3", "./messages.db")
+	var dbFilePath = "./messages.db"
+	db, err = sql.Open("sqlite3", dbFilePath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,6 +44,20 @@ func initDB() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// 打开文件
+	fileInfo, err := os.Stat(dbFilePath)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	// 获取文件大小
+	fileSize := fileInfo.Size()
+
+	// 输出文件大小
+	fmt.Printf("Database file size: %d bytes\n", fileSize)
+
 }
 
 func main() {
@@ -48,6 +65,8 @@ func main() {
 	defer db.Close()
 
 	r := gin.Default()
+	r.MaxMultipartMemory = 1 << 30 // 1GB
+	r.Use(gin.Recovery())
 	r.LoadHTMLGlob("templates/*")
 
 	r.GET("/", func(c *gin.Context) {
